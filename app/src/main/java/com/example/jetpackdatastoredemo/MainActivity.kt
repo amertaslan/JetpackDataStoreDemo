@@ -9,14 +9,14 @@ import androidx.datastore.dataStore
 import androidx.lifecycle.lifecycleScope
 import com.example.jetpackdatastoredemo.databinding.ActivityMainBinding
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 class MainActivity : AppCompatActivity(), UserRepository {
 
     private lateinit var binding: ActivityMainBinding
-    private var name: String? = null
-    private var surName: String? = null
-    private var age: Long? = null
     private val USER_DATA_STORE_FILE_NAME = "user_store.pb"
     private lateinit var user: UserModel
 
@@ -30,32 +30,34 @@ class MainActivity : AppCompatActivity(), UserRepository {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
 
         binding.saveButton.setOnClickListener {
-            if (isDataLoaded()) {
-                fillData()
-                user = UserModel(name, surName, age)
+
+                user = createUser()
                 lifecycleScope.launch {
                     saveUserInfo(user)
                 }
-            } else {
-                storeData()
-            }
+
         }
 
+        lifecycleScope.launch {
+            getUserInfo().collect { userModel ->
+                fillData(userModel)
+            }
+        }
     }
 
-    private fun storeData() {
-        name = binding.nameInput.text.toString()
-        surName = binding.surnameInput.text.toString()
-        age = binding.ageInput.text.toString().toLong()
+    private fun createUser(): UserModel {
+        return UserModel(
+            binding.nameInput.text.toString(),
+            binding.surnameInput.text.toString(),
+            binding.ageInput.text.toString().toLong()
+        )
     }
 
-    private fun fillData() {
-        binding.nameText.text = name
-        binding.surnameText.text = surName
-        binding.ageText.text = age.toString()
+    private fun fillData(userModel: UserModel) {
+        binding.nameText.text = userModel.name
+        binding.surnameText.text = userModel.surName
+        binding.ageText.text = userModel.age.toString()
     }
-
-    private fun isDataLoaded(): Boolean = !name.isNullOrBlank() && !surName.isNullOrBlank() && age != null
 
     override suspend fun saveUserInfo(user: UserModel) {
         userDataStore.updateData {store ->
@@ -68,7 +70,17 @@ class MainActivity : AppCompatActivity(), UserRepository {
     }
 
     override suspend fun getUserInfo(): Flow<UserModel> {
-        TODO("Not yet implemented")
+        return  userDataStore.data
+            .catch { exception ->
+                // dataStore.data throws an IOException when an error is encountered when reading data
+                if (exception is IOException) {
+                    emit(UserStore.getDefaultInstance())
+                } else {
+                    throw exception
+                }
+            }.map { protoBuilder ->
+                UserModel(protoBuilder.name, protoBuilder.surname, protoBuilder.age)
+            }
     }
 
 }
