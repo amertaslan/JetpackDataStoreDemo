@@ -10,7 +10,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.JetpackDataStoreDemo">
         <activity
-            android:name=".MainActivity"
+            android:name=".PreferencesDataStoreActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProtoDataStoreActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

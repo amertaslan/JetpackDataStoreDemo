@@ -1,22 +1,24 @@
 package com.example.jetpackdatastoredemo
 
 import android.content.Context
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.databinding.DataBindingUtil
 import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
 import androidx.lifecycle.lifecycleScope
-import com.example.jetpackdatastoredemo.databinding.ActivityMainBinding
+import com.example.jetpackdatastoredemo.databinding.ActivityProtoDataStoreBinding
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.io.IOException
 
-class MainActivity : AppCompatActivity(), UserRepository {
+class ProtoDataStoreActivity : AppCompatActivity(), UserRepository {
 
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var binding: ActivityProtoDataStoreBinding
     private val USER_DATA_STORE_FILE_NAME = "user_store.pb"
     private lateinit var user: UserModel
 
@@ -27,15 +29,25 @@ class MainActivity : AppCompatActivity(), UserRepository {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_proto_data_store)
+        binding.bottomNavigation.selectedItemId = R.id.proto
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
 
+            when (item.itemId) {
+                R.id.proto -> {
+                    startActivity(Intent(this, ProtoDataStoreActivity::class.java))
+                }
+                R.id.preferences -> {
+                    startActivity(Intent(this, PreferencesDataStoreActivity::class.java))
+                }
+            }
+            true
+        }
         binding.saveButton.setOnClickListener {
-
                 user = createUser()
                 lifecycleScope.launch {
                     saveUserInfo(user)
                 }
-
         }
 
         lifecycleScope.launch {
@@ -82,5 +94,4 @@ class MainActivity : AppCompatActivity(), UserRepository {
                 UserModel(protoBuilder.name, protoBuilder.surname, protoBuilder.age)
             }
     }
-
 }
